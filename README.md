@@ -1,2 +1,2 @@
 # Iguana
-A Gameboy Advanced Emulator written in Go
+A NES Emulator written in Go
