@@ -1,10 +1,14 @@
 package cpu
 
 type Instruction struct {
-	Value   int
-	Address int
-	Cycle   int
+	Value          int
+	Address        int
+	Cycle          uint8
+	AddressingMode func() uint8
+	Operador       func() uint8
 }
+
+// Addressing Modes
 
 func (cpu *CPU) imp() uint8 {
 	cpu.fetched = cpu.Accumulator
@@ -17,6 +21,7 @@ func (cpu *CPU) zp0() uint8 {
 	cpu.addr_abs &= 0x00FF
 	return 0
 }
+
 func (cpu *CPU) zpy() uint8 {
 	tmp := cpu.read(cpu.PC + uint16(cpu.Y))
 	cpu.addr_abs = uint16(tmp)
@@ -24,6 +29,7 @@ func (cpu *CPU) zpy() uint8 {
 	cpu.addr_abs &= 0x00FF
 	return 0
 }
+
 func (cpu *CPU) abs() uint8 {
 	var high_addr uint16 = uint16(cpu.read(cpu.PC))
 	cpu.PC++
@@ -32,6 +38,7 @@ func (cpu *CPU) abs() uint8 {
 	cpu.addr_abs = (high_addr << 8) | low_addr
 	return 0
 }
+
 func (cpu *CPU) aby() uint8 {
 	var high_addr uint16 = uint16(cpu.read(cpu.PC))
 	cpu.PC++
@@ -44,6 +51,7 @@ func (cpu *CPU) aby() uint8 {
 	}
 	return 0
 }
+
 func (cpu *CPU) izx() uint8 {
 	var t uint16 = uint16(cpu.read(cpu.PC))
 	cpu.PC++
@@ -52,17 +60,20 @@ func (cpu *CPU) izx() uint8 {
 	cpu.addr_abs = (high_addr << 8) | low_addr
 	return 0
 }
+
 func (cpu *CPU) imm() uint8 {
 	cpu.addr_abs = cpu.PC
 	cpu.PC++
 	return 0
 }
+
 func (cpu *CPU) zpx() uint8 {
 	cpu.addr_abs = uint16(cpu.read(cpu.PC + uint16(cpu.Y)))
 	cpu.PC++
 	cpu.addr_abs &= 0x00FF
 	return 0
 }
+
 func (cpu *CPU) rel() uint8 {
 	cpu.addr_relative = uint16(cpu.read(cpu.PC))
 	cpu.PC++
@@ -71,6 +82,7 @@ func (cpu *CPU) rel() uint8 {
 	}
 	return 0
 }
+
 func (cpu *CPU) abx() uint8 {
 	var high_addr uint16 = uint16(cpu.read(cpu.PC))
 	cpu.PC++
@@ -83,6 +95,7 @@ func (cpu *CPU) abx() uint8 {
 		return 1
 	}
 	return 0
+
 }
 func (cpu *CPU) ind() uint8 {
 	var high_addr uint16 = uint16(cpu.read(cpu.PC))
@@ -93,6 +106,7 @@ func (cpu *CPU) ind() uint8 {
 	cpu.addr_abs = uint16(cpu.read(ptr+1)<<8 | cpu.read(ptr))
 	return 0
 }
+
 func (cpu *CPU) izy() uint8 {
 	var t uint16 = uint16(cpu.read(cpu.PC))
 	cpu.PC++
