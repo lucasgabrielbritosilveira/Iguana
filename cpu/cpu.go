@@ -35,7 +35,10 @@ func NewCPU() CPU {
 	}
 }
 func (cpu *CPU) fetch() uint8 {
-	return 0
+	if cpu.Instructions[cpu.opcode].AddressingMode.ID != "IMP" {
+		cpu.fetched = cpu.read(cpu.addr_abs)
+	}
+	return cpu.fetched
 }
 
 func (cpu *CPU) clock() {
@@ -43,7 +46,7 @@ func (cpu *CPU) clock() {
 		cpu.opcode = cpu.read(cpu.PC)
 		cpu.PC++
 		cpu.cycles = cpu.Instructions[cpu.opcode].Cycle
-		cpu.cycles += cpu.Instructions[cpu.opcode].AddressingMode() & cpu.Instructions[cpu.opcode].Operador()
+		cpu.cycles += cpu.Instructions[cpu.opcode].AddressingMode.Run() & cpu.Instructions[cpu.opcode].Operator.Run()
 	}
 	cpu.cycles--
 

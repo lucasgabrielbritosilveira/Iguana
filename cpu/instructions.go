@@ -1,11 +1,20 @@
 package cpu
 
+type AddressingMode struct {
+	Run func() uint8
+	ID  string
+}
+
+type Operator struct {
+	Run func() uint8
+	ID  string
+}
 type Instruction struct {
 	Value          int
 	Address        int
 	Cycle          uint8
-	AddressingMode func() uint8
-	Operador       func() uint8
+	AddressingMode AddressingMode
+	Operator       Operator
 }
 
 // Addressing Modes
@@ -15,34 +24,32 @@ func (cpu *CPU) imp() uint8 {
 	return 0
 }
 func (cpu *CPU) zp0() uint8 {
-	tmp := cpu.read(cpu.PC)
-	cpu.addr_abs = uint16(tmp)
-	cpu.PC++
+	cpu.addr_abs = uint16(cpu.read(cpu.PC))
 	cpu.addr_abs &= 0x00FF
+	cpu.PC++
 	return 0
 }
 
 func (cpu *CPU) zpy() uint8 {
-	tmp := cpu.read(cpu.PC + uint16(cpu.Y))
-	cpu.addr_abs = uint16(tmp)
-	cpu.PC++
+	cpu.addr_abs = uint16(cpu.read(cpu.PC + uint16(cpu.Y)))
 	cpu.addr_abs &= 0x00FF
+	cpu.PC++
 	return 0
 }
 
 func (cpu *CPU) abs() uint8 {
-	var high_addr uint16 = uint16(cpu.read(cpu.PC))
-	cpu.PC++
 	var low_addr uint16 = uint16(cpu.read(cpu.PC))
+	cpu.PC++
+	var high_addr uint16 = uint16(cpu.read(cpu.PC))
 	cpu.PC++
 	cpu.addr_abs = (high_addr << 8) | low_addr
 	return 0
 }
 
 func (cpu *CPU) aby() uint8 {
-	var high_addr uint16 = uint16(cpu.read(cpu.PC))
-	cpu.PC++
 	var low_addr uint16 = uint16(cpu.read(cpu.PC))
+	cpu.PC++
+	var high_addr uint16 = uint16(cpu.read(cpu.PC))
 	cpu.PC++
 	cpu.addr_abs = (high_addr << 8) | low_addr
 	cpu.addr_abs += uint16(cpu.Y)
@@ -53,11 +60,11 @@ func (cpu *CPU) aby() uint8 {
 }
 
 func (cpu *CPU) izx() uint8 {
-	var t uint16 = uint16(cpu.read(cpu.PC))
-	cpu.PC++
-	var low_addr uint16 = uint16(cpu.read(uint16(t+uint16(cpu.X)) & 0x00FF))
-	var high_addr uint16 = uint16(cpu.read(uint16(t+uint16(cpu.X)+1) & 0x00FF))
+	var temp uint16 = uint16(cpu.read(cpu.PC))
+	var low_addr uint16 = uint16(cpu.read(uint16(temp+uint16(cpu.X)) & 0x00FF))
+	var high_addr uint16 = uint16(cpu.read(uint16(temp+uint16(cpu.X)+1) & 0x00FF))
 	cpu.addr_abs = (high_addr << 8) | low_addr
+	cpu.PC++
 	return 0
 }
 
@@ -68,29 +75,28 @@ func (cpu *CPU) imm() uint8 {
 }
 
 func (cpu *CPU) zpx() uint8 {
-	cpu.addr_abs = uint16(cpu.read(cpu.PC + uint16(cpu.Y)))
-	cpu.PC++
+	cpu.addr_abs = uint16(cpu.read(cpu.PC + uint16(cpu.X)))
 	cpu.addr_abs &= 0x00FF
+	cpu.PC++
 	return 0
 }
 
 func (cpu *CPU) rel() uint8 {
 	cpu.addr_relative = uint16(cpu.read(cpu.PC))
-	cpu.PC++
 	if cpu.addr_relative&0x80 != 0 {
 		cpu.addr_relative |= 0xFF00
 	}
+	cpu.PC++
 	return 0
 }
 
 func (cpu *CPU) abx() uint8 {
-	var high_addr uint16 = uint16(cpu.read(cpu.PC))
-	cpu.PC++
 	var low_addr uint16 = uint16(cpu.read(cpu.PC))
+	cpu.PC++
+	var high_addr uint16 = uint16(cpu.read(cpu.PC))
 	cpu.PC++
 	cpu.addr_abs = (high_addr << 8) | low_addr
 	cpu.addr_abs += uint16(cpu.X)
-
 	if cpu.addr_abs&0xFF00 != (high_addr << 8) {
 		return 1
 	}
@@ -98,124 +104,68 @@ func (cpu *CPU) abx() uint8 {
 
 }
 func (cpu *CPU) ind() uint8 {
-	var high_addr uint16 = uint16(cpu.read(cpu.PC))
-	cpu.PC++
 	var low_addr uint16 = uint16(cpu.read(cpu.PC))
 	cpu.PC++
+	var high_addr uint16 = uint16(cpu.read(cpu.PC))
+	cpu.PC++
 	var ptr uint16 = (high_addr << 8) | low_addr
-	cpu.addr_abs = uint16(cpu.read(ptr+1)<<8 | cpu.read(ptr))
+	if low_addr == 0x00FF {
+		cpu.addr_abs = uint16(cpu.read(ptr&0xFF00))<<8 | uint16(cpu.read(ptr))
+	} else {
+		cpu.addr_abs = uint16(cpu.read(ptr+1))<<8 | uint16(cpu.read(ptr))
+	}
 	return 0
 }
 
 func (cpu *CPU) izy() uint8 {
-	var t uint16 = uint16(cpu.read(cpu.PC))
-	cpu.PC++
-	var low_addr uint16 = uint16(cpu.read(t & 0x00FF))
-	var high_addr uint16 = uint16(cpu.read(t + 1&0x00FF))
+	var tmp uint16 = uint16(cpu.read(cpu.PC))
+	var low_addr uint16 = uint16(cpu.read(tmp & 0x00FF))
+	var high_addr uint16 = uint16(cpu.read(tmp + 1&0x00FF))
+
 	cpu.addr_abs = (high_addr << 8) | low_addr
 	cpu.addr_abs += uint16(cpu.Y)
+
+	cpu.PC++
 	if cpu.addr_abs&0x00FF != (high_addr << 8) {
 		return 1
 	}
 	return 0
 }
 
-// Opcodes
+// Arithmetics
 
-func adc() {
+func (cpu *CPU) adc() uint8 {
+	cpu.fetch()
+	cpu.Add(uint16(cpu.fetched))
+	return 1
+}
+
+func (cpu *CPU) sbc() uint8 {
+	var value uint16 = uint16(cpu.fetched) ^ 0x00FF
+	cpu.Add(value)
+	return 1
+}
+
+func (cpu *CPU) dec() {
 
 }
 
-func and() {
-
+func (cpu *CPU) dex() {
+	cpu.X--
+	if cpu.X == 0 {
+		cpu.Status["Z"] = 1
+	} else if cpu.X&0x80 != 0 {
+		cpu.Status["N"] = 1
+	}
 }
 
-func asl() {
-
-}
-
-func bcc() {
-
-}
-
-func bcs() {
-
-}
-
-func beq() {
-
-}
-
-func bit() {
-
-}
-
-func bmi() {
-
-}
-
-func bne() {
-
-}
-
-func bpl() {
-
-}
-
-func brk() {
-
-}
-
-func bvc() {
-
-}
-
-func bvs() {
-
-}
-
-func clc() {
-
-}
-
-func cld() {
-
-}
-
-func cli() {
-
-}
-
-func clv() {
-
-}
-
-func cmp() {
-
-}
-
-func cpx() {
-
-}
-
-func cpy() {
-
-}
-
-func dec() {
-
-}
-
-func dex() {
-
-}
-
-func dey() {
-
-}
-
-func eor() {
-
+func (cpu *CPU) dey() {
+	cpu.Y--
+	if cpu.Y == 0 {
+		cpu.Status["Z"] = 1
+	} else if cpu.Y&0x80 != 0 {
+		cpu.Status["N"] = 1
+	}
 }
 
 func inc() {
@@ -230,23 +180,54 @@ func iny() {
 
 }
 
-func jmp() {
+// Compare
+
+func cmp() {
 
 }
 
-func jsr() {
+func cpx() {
 
 }
 
-func lda() {
+func cpy() {
 
 }
 
-func ldx() {
+// Bitwise
+
+func asl() {
 
 }
 
-func ldy() {
+func (cpu *CPU) and() uint8 {
+	cpu.fetch()
+	cpu.Accumulator &= cpu.fetched
+	if cpu.Accumulator == 0 {
+		cpu.Status["Z"] = 1
+	} else if cpu.Accumulator&0x80 != 0 {
+		cpu.Status["N"] = 1
+	}
+	return 1
+}
+
+func eor() {
+
+}
+
+func ora() {
+
+}
+
+func bit() {
+
+}
+
+func rol() {
+
+}
+
+func ror() {
 
 }
 
@@ -254,13 +235,121 @@ func lsr() {
 
 }
 
-func nop() {
+// Branchs and Jumps
+
+func (cpu *CPU) bcc() uint8 {
+	if cpu.Status["C"] == 0 {
+		cpu.Branch()
+	}
+	return 0
+}
+
+func (cpu *CPU) bcs() uint8 {
+	if cpu.Status["C"] == 1 {
+		cpu.Branch()
+	}
+	return 0
+}
+
+func (cpu *CPU) beq() uint8 {
+	if cpu.Status["Z"] == 1 {
+		cpu.Branch()
+	}
+	return 0
+}
+
+func (cpu *CPU) bmi() uint8 {
+	if cpu.Status["N"] == 1 {
+		cpu.Branch()
+	}
+	return 0
 
 }
 
-func ora() {
+func (cpu *CPU) bne() uint8 {
+	if cpu.Status["Z"] == 0 {
+		cpu.Branch()
+	}
+	return 0
+}
+
+func (cpu *CPU) bpl() uint8 {
+	if cpu.Status["N"] == 0 {
+		cpu.Branch()
+	}
+	return 0
+}
+
+func (cpu *CPU) bvc() uint8 {
+	if cpu.Status["V"] == 0 {
+		cpu.Branch()
+	}
+	return 0
+}
+
+func (cpu *CPU) bvs() uint8 {
+	if cpu.Status["V"] == 1 {
+		cpu.Branch()
+	}
+	return 0
+}
+
+func brk() {
 
 }
+
+func jsr() {
+
+}
+
+func jmp() {
+
+}
+
+func rti() {
+
+}
+
+func rts() {
+
+}
+
+// Status
+
+func (cpu *CPU) clc() uint8 {
+	cpu.Status["C"] = 0
+	return 0
+}
+
+func (cpu *CPU) cld() uint8 {
+	cpu.Status["D"] = 0
+	return 0
+
+}
+
+func (cpu *CPU) cli() uint8 {
+	cpu.Status["I"] = 0
+	return 0
+}
+
+func (cpu *CPU) clv() uint8 {
+	cpu.Status["V"] = 0
+	return 0
+}
+
+func sec() {
+
+}
+
+func sed() {
+
+}
+
+func sei() {
+
+}
+
+//Stack
 
 func pha() {
 
@@ -278,35 +367,17 @@ func plp() {
 
 }
 
-func rol() {
+// Data
+
+func lda() {
 
 }
 
-func ror() {
+func ldx() {
 
 }
 
-func rti() {
-
-}
-
-func rts() {
-
-}
-
-func sbc() {
-
-}
-
-func sec() {
-
-}
-
-func sed() {
-
-}
-
-func sei() {
+func ldy() {
 
 }
 
@@ -343,5 +414,10 @@ func txs() {
 }
 
 func tya() {
+
+}
+
+// Not an operator
+func nop() {
 
 }
