@@ -146,52 +146,85 @@ func (cpu *CPU) sbc() uint8 {
 	return 1
 }
 
-func (cpu *CPU) dec() {
-
+func (cpu *CPU) dec() uint8 {
+	cpu.fetch()
+	var tmp uint8 = cpu.fetched - 1
+	cpu.write(cpu.addr_abs, tmp&0x00FF)
+	if tmp == 0 {
+		cpu.Status["Z"] = 1
+	} else if tmp&0x80 != 0 {
+		cpu.Status["N"] = 1
+	}
+	return 0
 }
 
-func (cpu *CPU) dex() {
+func (cpu *CPU) dex() uint8 {
 	cpu.X--
 	if cpu.X == 0 {
 		cpu.Status["Z"] = 1
 	} else if cpu.X&0x80 != 0 {
 		cpu.Status["N"] = 1
 	}
+	return 0
 }
 
-func (cpu *CPU) dey() {
+func (cpu *CPU) dey() uint8 {
 	cpu.Y--
 	if cpu.Y == 0 {
 		cpu.Status["Z"] = 1
 	} else if cpu.Y&0x80 != 0 {
 		cpu.Status["N"] = 1
 	}
+	return 0
 }
 
-func inc() {
-
+func (cpu *CPU) inc() uint8 {
+	cpu.fetch()
+	var tmp uint8 = cpu.fetched + 1
+	cpu.write(cpu.addr_abs, tmp&0x00FF)
+	if tmp == 0 {
+		cpu.Status["Z"] = 1
+	} else if tmp&0x80 != 0 {
+		cpu.Status["N"] = 1
+	}
+	return 0
 }
 
-func inx() {
-
+func (cpu *CPU) inx() uint8 {
+	cpu.X++
+	if cpu.X == 0 {
+		cpu.Status["Z"] = 1
+	} else if cpu.X&0x80 != 0 {
+		cpu.Status["N"] = 1
+	}
+	return 0
 }
 
-func iny() {
-
+func (cpu *CPU) iny() uint8 {
+	cpu.Y++
+	if cpu.Y == 0 {
+		cpu.Status["Z"] = 1
+	} else if cpu.Y&0x80 != 0 {
+		cpu.Status["N"] = 1
+	}
+	return 0
 }
 
 // Compare
 
-func cmp() {
-
+func (cpu *CPU) cmp() uint8 {
+	cpu.Compare(cpu.Accumulator)
+	return 1
 }
 
-func cpx() {
-
+func (cpu *CPU) cpx() uint8 {
+	cpu.Compare(cpu.X)
+	return 0
 }
 
-func cpy() {
-
+func (cpu *CPU) cpy() uint8 {
+	cpu.Compare(cpu.Y)
+	return 0
 }
 
 // Bitwise
