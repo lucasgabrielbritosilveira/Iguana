@@ -5,19 +5,19 @@ import (
 )
 
 type CPU struct {
-	Instructions  []Instruction
-	Accumulator   uint8
-	X             uint8
-	Y             uint8
-	PC            uint16
-	SP            uint8
-	Status        map[string]uint8
-	fetched       uint8
-	addr_abs      uint16
-	addr_relative uint16
-	opcode        uint8
-	cycles        uint8
-	bus           *bus.Bus
+	Instructions []Instruction
+	Accumulator  uint8
+	X            uint8
+	Y            uint8
+	PC           uint16
+	SP           uint8
+	Status       map[string]uint8
+	fetched      uint8
+	addrAbs      uint16
+	addrRelative uint16
+	opcode       uint8
+	cycles       uint8
+	bus          *bus.Bus
 }
 
 func NewCPU() CPU {
@@ -36,7 +36,7 @@ func NewCPU() CPU {
 }
 func (cpu *CPU) fetch() uint8 {
 	if cpu.Instructions[cpu.opcode].AddressingMode.ID != "IMP" {
-		cpu.fetched = cpu.read(cpu.addr_abs)
+		cpu.fetched = cpu.read(cpu.addrAbs)
 	}
 	return cpu.fetched
 }

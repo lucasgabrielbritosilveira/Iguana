@@ -24,109 +24,109 @@ func (cpu *CPU) imp() uint8 {
 	return 0
 }
 func (cpu *CPU) zp0() uint8 {
-	cpu.addr_abs = uint16(cpu.read(cpu.PC))
-	cpu.addr_abs &= 0x00FF
+	cpu.addrAbs = uint16(cpu.read(cpu.PC))
+	cpu.addrAbs &= 0x00FF
 	cpu.PC++
 	return 0
 }
 
 func (cpu *CPU) zpy() uint8 {
-	cpu.addr_abs = uint16(cpu.read(cpu.PC + uint16(cpu.Y)))
-	cpu.addr_abs &= 0x00FF
+	cpu.addrAbs = uint16(cpu.read(cpu.PC + uint16(cpu.Y)))
+	cpu.addrAbs &= 0x00FF
 	cpu.PC++
 	return 0
 }
 
 func (cpu *CPU) abs() uint8 {
-	var low_addr uint16 = uint16(cpu.read(cpu.PC))
+	lowAddr := uint16(cpu.read(cpu.PC))
 	cpu.PC++
-	var high_addr uint16 = uint16(cpu.read(cpu.PC))
+	highAddr := uint16(cpu.read(cpu.PC))
 	cpu.PC++
-	cpu.addr_abs = (high_addr << 8) | low_addr
+	cpu.addrAbs = (highAddr << 8) | lowAddr
 	return 0
 }
 
 func (cpu *CPU) aby() uint8 {
-	var low_addr uint16 = uint16(cpu.read(cpu.PC))
+	lowAddr := uint16(cpu.read(cpu.PC))
 	cpu.PC++
-	var high_addr uint16 = uint16(cpu.read(cpu.PC))
+	highAddr := uint16(cpu.read(cpu.PC))
 	cpu.PC++
-	cpu.addr_abs = (high_addr << 8) | low_addr
-	cpu.addr_abs += uint16(cpu.Y)
-	if cpu.addr_abs&0xFF00 != (high_addr << 8) {
+	cpu.addrAbs = (highAddr << 8) | lowAddr
+	cpu.addrAbs += uint16(cpu.Y)
+	if cpu.addrAbs&0xFF00 != (highAddr << 8) {
 		return 1
 	}
 	return 0
 }
 
 func (cpu *CPU) izx() uint8 {
-	var temp uint16 = uint16(cpu.read(cpu.PC))
-	var low_addr uint16 = uint16(cpu.read(uint16(temp+uint16(cpu.X)) & 0x00FF))
-	var high_addr uint16 = uint16(cpu.read(uint16(temp+uint16(cpu.X)+1) & 0x00FF))
-	cpu.addr_abs = (high_addr << 8) | low_addr
+	temp := uint16(cpu.read(cpu.PC))
+	lowAddr := uint16(cpu.read(uint16(temp+uint16(cpu.X)) & 0x00FF))
+	highAddr := uint16(cpu.read(uint16(temp+uint16(cpu.X)+1) & 0x00FF))
+	cpu.addrAbs = (highAddr << 8) | lowAddr
 	cpu.PC++
 	return 0
 }
 
 func (cpu *CPU) imm() uint8 {
-	cpu.addr_abs = cpu.PC
+	cpu.addrAbs = cpu.PC
 	cpu.PC++
 	return 0
 }
 
 func (cpu *CPU) zpx() uint8 {
-	cpu.addr_abs = uint16(cpu.read(cpu.PC + uint16(cpu.X)))
-	cpu.addr_abs &= 0x00FF
+	cpu.addrAbs = uint16(cpu.read(cpu.PC + uint16(cpu.X)))
+	cpu.addrAbs &= 0x00FF
 	cpu.PC++
 	return 0
 }
 
 func (cpu *CPU) rel() uint8 {
-	cpu.addr_relative = uint16(cpu.read(cpu.PC))
-	if cpu.addr_relative&0x80 != 0 {
-		cpu.addr_relative |= 0xFF00
+	cpu.addrRelative = uint16(cpu.read(cpu.PC))
+	if cpu.addrRelative&0x80 != 0 {
+		cpu.addrRelative |= 0xFF00
 	}
 	cpu.PC++
 	return 0
 }
 
 func (cpu *CPU) abx() uint8 {
-	var low_addr uint16 = uint16(cpu.read(cpu.PC))
+	lowAddr := uint16(cpu.read(cpu.PC))
 	cpu.PC++
-	var high_addr uint16 = uint16(cpu.read(cpu.PC))
+	highAddr := uint16(cpu.read(cpu.PC))
 	cpu.PC++
-	cpu.addr_abs = (high_addr << 8) | low_addr
-	cpu.addr_abs += uint16(cpu.X)
-	if cpu.addr_abs&0xFF00 != (high_addr << 8) {
+	cpu.addrAbs = (highAddr << 8) | lowAddr
+	cpu.addrAbs += uint16(cpu.X)
+	if cpu.addrAbs&0xFF00 != (highAddr << 8) {
 		return 1
 	}
 	return 0
 
 }
 func (cpu *CPU) ind() uint8 {
-	var low_addr uint16 = uint16(cpu.read(cpu.PC))
+	lowAddr := uint16(cpu.read(cpu.PC))
 	cpu.PC++
-	var high_addr uint16 = uint16(cpu.read(cpu.PC))
+	highAddr := uint16(cpu.read(cpu.PC))
 	cpu.PC++
-	var ptr uint16 = (high_addr << 8) | low_addr
-	if low_addr == 0x00FF {
-		cpu.addr_abs = uint16(cpu.read(ptr&0xFF00))<<8 | uint16(cpu.read(ptr))
+	ptr := (highAddr << 8) | lowAddr
+	if lowAddr == 0x00FF {
+		cpu.addrAbs = uint16(cpu.read(ptr&0xFF00))<<8 | uint16(cpu.read(ptr))
 	} else {
-		cpu.addr_abs = uint16(cpu.read(ptr+1))<<8 | uint16(cpu.read(ptr))
+		cpu.addrAbs = uint16(cpu.read(ptr+1))<<8 | uint16(cpu.read(ptr))
 	}
 	return 0
 }
 
 func (cpu *CPU) izy() uint8 {
-	var tmp uint16 = uint16(cpu.read(cpu.PC))
-	var low_addr uint16 = uint16(cpu.read(tmp & 0x00FF))
-	var high_addr uint16 = uint16(cpu.read(tmp + 1&0x00FF))
+	tmp := uint16(cpu.read(cpu.PC))
+	lowAddr := uint16(cpu.read(tmp & 0x00FF))
+	highAddr := uint16(cpu.read(tmp + 1&0x00FF))
 
-	cpu.addr_abs = (high_addr << 8) | low_addr
-	cpu.addr_abs += uint16(cpu.Y)
+	cpu.addrAbs = (highAddr << 8) | lowAddr
+	cpu.addrAbs += uint16(cpu.Y)
 
 	cpu.PC++
-	if cpu.addr_abs&0x00FF != (high_addr << 8) {
+	if cpu.addrAbs&0x00FF != (highAddr << 8) {
 		return 1
 	}
 	return 0
@@ -141,15 +141,15 @@ func (cpu *CPU) adc() uint8 {
 }
 
 func (cpu *CPU) sbc() uint8 {
-	var value uint16 = uint16(cpu.fetched) ^ 0x00FF
+	value := uint16(cpu.fetched) ^ 0x00FF
 	cpu.Add(value)
 	return 1
 }
 
 func (cpu *CPU) dec() uint8 {
 	cpu.fetch()
-	var tmp uint8 = cpu.fetched - 1
-	cpu.write(cpu.addr_abs, tmp&0x00FF)
+	tmp := cpu.fetched - 1
+	cpu.write(cpu.addrAbs, tmp&0x00FF)
 	if tmp == 0 {
 		cpu.Status["Z"] = 1
 	} else if tmp&0x80 != 0 {
@@ -180,8 +180,8 @@ func (cpu *CPU) dey() uint8 {
 
 func (cpu *CPU) inc() uint8 {
 	cpu.fetch()
-	var tmp uint8 = cpu.fetched + 1
-	cpu.write(cpu.addr_abs, tmp&0x00FF)
+	tmp := cpu.fetched + 1
+	cpu.write(cpu.addrAbs, tmp&0x00FF)
 	if tmp == 0 {
 		cpu.Status["Z"] = 1
 	} else if tmp&0x80 != 0 {
@@ -244,20 +244,60 @@ func (cpu *CPU) and() uint8 {
 	return 1
 }
 
-func eor() {
-
+func (cpu *CPU) eor() uint8 {
+	cpu.fetch()
+	cpu.Accumulator = ^cpu.fetched
+	if cpu.Accumulator == 0 {
+		cpu.Status["Z"] = 0
+	} else {
+		cpu.Status["Z"] = 1
+	}
+	cpu.Status["N"] = cpu.Accumulator & 0x80
+	return 1
 }
 
-func ora() {
-
+func (cpu *CPU) ora() uint8 {
+	cpu.fetch()
+	cpu.Accumulator = cpu.Accumulator | cpu.fetched
+	if cpu.Accumulator == 0 {
+		cpu.Status["Z"] = 0
+	} else {
+		cpu.Status["Z"] = 1
+	}
+	cpu.Status["N"] = cpu.Accumulator & 0x80
+	return 1
 }
 
-func bit() {
-
+func (cpu *CPU) bit() uint8 {
+	cpu.fetch()
+	temp := cpu.Accumulator & cpu.fetched
+	if temp&0x00FF == 0 {
+		cpu.Status["Z"] = 0
+	} else {
+		cpu.Status["Z"] = 1
+	}
+	cpu.Status["N"] = cpu.fetched & (1 << 7)
+	cpu.Status["V"] = cpu.fetched & (1 << 6)
+	return 0
 }
 
-func rol() {
+func (cpu *CPU) rol() uint8 {
+	cpu.fetch()
+	temp := uint16((cpu.fetched << 1) | cpu.Status["C"])
+	cpu.Status["C"] = uint8(temp & 0xFF00)
+	if (temp & 0x00FF) == 0x0000 {
+		cpu.Status["Z"] = 0
+	} else {
+		cpu.Status["Z"] = 1
+	}
+	cpu.Status["N"] = uint8(temp & 0x0080)
 
+	if cpu.Instructions[cpu.opcode].AddressingMode.ID == "IMP" {
+		cpu.Accumulator = uint8(temp & 0x00FF)
+	} else {
+		cpu.write(cpu.addrAbs, uint8(temp&0x00FF))
+	}
+	return 0
 }
 
 func ror() {
@@ -268,7 +308,7 @@ func lsr() {
 
 }
 
-// Branchs and Jumps
+// Branches and Jumps
 
 func (cpu *CPU) bcc() uint8 {
 	if cpu.Status["C"] == 0 {
@@ -384,73 +424,102 @@ func sei() {
 
 //Stack
 
-func pha() {
-
+func (cpu *CPU) pha() uint8 {
+	cpu.write(uint16(cpu.SP)+0x0100, cpu.Accumulator)
+	cpu.SP--
+	return 0
 }
 
-func php() {
-
+func (cpu *CPU) php() uint8 {
+	cpu.write(uint16(cpu.SP)+0x0100, cpu.Flags()|0x10)
+	cpu.Status["B"] = 0
+	cpu.Status["U"] = 0
+	cpu.SP--
+	return 0
 }
 
-func pla() {
-
+func (cpu *CPU) pla() uint8 {
+	cpu.SP++
+	cpu.Accumulator = cpu.read(0x0100 + uint16(cpu.SP))
+	if cpu.Accumulator == 0 {
+		cpu.Status["Z"] = 0
+	} else {
+		cpu.Status["Z"] = 1
+	}
+	cpu.Status["N"] = cpu.Accumulator & 0x80
+	return 0
 }
 
-func plp() {
-
+func (cpu *CPU) plp() uint8 {
+	cpu.SP++
+	cpu.SetFlags(cpu.read(0x0100 + uint16(cpu.SP)))
+	cpu.Status["U"] = 1
+	return 0
 }
 
 // Data
 
-func lda() {
-
+func (cpu *CPU) lda() uint8 {
+	cpu.Load(&cpu.Accumulator)
+	return 1
 }
 
-func ldx() {
-
+func (cpu *CPU) ldx() uint8 {
+	cpu.Load(&cpu.X)
+	return 1
 }
 
-func ldy() {
-
+func (cpu *CPU) ldy() uint8 {
+	cpu.Load(&cpu.Y)
+	return 1
 }
 
-func sta() {
-
+func (cpu *CPU) sta() uint8 {
+	cpu.write(cpu.addrAbs, cpu.Accumulator)
+	return 0
 }
 
-func stx() {
-
+func (cpu *CPU) stx() uint8 {
+	cpu.write(cpu.addrAbs, cpu.X)
+	return 0
 }
 
-func sty() {
-
+func (cpu *CPU) sty() uint8 {
+	cpu.write(cpu.addrAbs, cpu.Y)
+	return 0
 }
 
-func tax() {
-
+func (cpu *CPU) tax() uint8 {
+	cpu.Transfer(&cpu.Accumulator, &cpu.X)
+	return 0
 }
 
-func tay() {
-
+func (cpu *CPU) tay() uint8 {
+	cpu.Transfer(&cpu.Accumulator, &cpu.Y)
+	return 0
 }
 
-func tsx() {
-
+func (cpu *CPU) tsx() uint8 {
+	cpu.Transfer(&cpu.SP, &cpu.X)
+	return 0
 }
 
-func txa() {
-
+func (cpu *CPU) txa() uint8 {
+	cpu.Transfer(&cpu.X, &cpu.Accumulator)
+	return 0
 }
 
-func txs() {
-
+func (cpu *CPU) txs() uint8 {
+	cpu.SP = cpu.X
+	return 0
 }
 
-func tya() {
-
+func (cpu *CPU) tya() uint8 {
+	cpu.Transfer(&cpu.Y, &cpu.Accumulator)
+	return 0
 }
 
 // Not an operator
-func nop() {
-
+func (cpu *CPU) nop() uint8 {
+	return 0
 }
