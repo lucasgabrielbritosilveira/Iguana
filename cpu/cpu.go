@@ -53,13 +53,70 @@ func (cpu *CPU) clock() {
 }
 
 func (cpu *CPU) reset() {
+	cpu.Accumulator = 0
+	cpu.X = 0
+	cpu.Y = 0
+	cpu.SP = 0xFD
+	cpu.SetFlags(0)
+
+	cpu.PC = uint16(cpu.read(0xFFFD))<<8 | uint16(cpu.read(0xFFFC))
+
+	cpu.addrAbs = 0
+	cpu.addrRelative = 0
+	cpu.fetched = 0
+
+	cpu.cycles = 8
 
 }
 func (cpu *CPU) irq() {
+	if cpu.Status["I"] == 0 {
+		cpu.write(0x0100+uint16(cpu.SP), uint8((cpu.PC>>8)&0x00FF))
+		cpu.SP--
+		cpu.write(0x0100+uint16(cpu.SP), uint8(cpu.PC&0x00FF))
+		cpu.SP--
 
+		cpu.Status["I"] = 1
+		cpu.Status["U"] = 1
+		cpu.Status["B"] = 0
+
+		cpu.write(0x0100+uint16(cpu.SP), cpu.Flags())
+		cpu.SP--
+
+		cpu.addrAbs = 0xFFFE
+		cpu.PC = uint16(cpu.read(0xFFFF))<<8 | uint16(cpu.read(0xFFFE))
+
+		cpu.cycles = 7
+
+	}
 }
 func (cpu *CPU) nmi() {
+	cpu.write(0x0100+uint16(cpu.SP), uint8((cpu.PC>>8)&0x00FF))
+	cpu.SP--
+	cpu.write(0x0100+uint16(cpu.SP), uint8(cpu.PC&0x00FF))
+	cpu.SP--
 
+	cpu.Status["I"] = 1
+	cpu.Status["U"] = 1
+	cpu.Status["B"] = 0
+
+	cpu.write(0x0100+uint16(cpu.SP), cpu.Flags())
+	cpu.SP--
+
+	cpu.addrAbs = 0xFFFA
+	cpu.PC = uint16(cpu.read(0xFFFB))<<8 | uint16(cpu.read(0xFFFA))
+
+	cpu.cycles = 8
+}
+
+func (cpu *CPU) rti() uint8 {
+	cpu.SP++
+	cpu.SetFlags(cpu.read(0x0100 + uint16(cpu.SP)))
+	cpu.SP++
+
+	cpu.PC = uint16(cpu.read(0x0100 + uint16(cpu.SP)))
+	cpu.SP++
+	cpu.PC |= uint16(cpu.read(0x0100+uint16(cpu.SP))) << 8
+	return 0
 }
 func (cpu *CPU) read(address uint16) uint8 {
 	return cpu.bus.Read(address)
